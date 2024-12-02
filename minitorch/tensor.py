@@ -104,7 +104,7 @@ class Tensor:
 
     def to_numpy(self) -> npt.NDArray[np.float64]:
         """
-        Returns:
+        Returns:re
              Converted to numpy array
         """
         return self.contiguous()._tensor._storage.reshape(self.shape)
@@ -217,7 +217,7 @@ class Tensor:
     def mean(self, dim: Optional[int] = None) -> Tensor:
         "Compute the mean over dimension `dim`"
         if dim is not None:
-            return self.sum(dim) / self.shape[dim]
+            return self.sum(dim) / float(self.shape[dim])
         else:
             return self.sum() / self.size
 

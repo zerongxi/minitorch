@@ -210,7 +210,6 @@ Derivative check at arguments f(%s) and received derivative f'=%f for argument %
 but was expecting derivative f'=%f from central difference."""
     for i, x in enumerate(scalars):
         check = central_difference(f, *scalars, arg=i)
-        print(str([e.data for e in scalars]), x.derivative, i, check)
         assert x.derivative is not None
         np.testing.assert_allclose(
             x.derivative,
