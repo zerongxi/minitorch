@@ -265,27 +265,18 @@ def tensor_map(
         in_strides: Strides,
     ) -> None:
         # TODO: Implement for Task 2.3.
-        in_idx = np.zeros_like(in_shape)
-        
-        def _helper(out_idx, dim):
-            if dim == len(out_shape):
-                broadcast_index(
-                    big_index=out_idx,
-                    big_shape=out_shape,
-                    shape=in_shape,
-                    out_index=in_idx,
-                )
-                out_pos = index_to_position(index=out_idx, strides=out_strides)
-                in_pos = index_to_position(index=in_idx, strides=in_strides)
-                out[out_pos] = fn(in_storage[in_pos])
-                return
-            out_idx.append(None)
-            for i in range(out_shape[dim]):
-                out_idx[-1] = i
-                _helper(out_idx, dim + 1)
-            out_idx.pop()
-
-        _helper([], 0)
+        for o in np.ndindex(tuple(out_shape)):
+            out_idx = np.array(o)
+            in_idx = np.zeros_like(in_shape)
+            broadcast_index(
+                big_index=out_idx,
+                big_shape=out_shape,
+                shape=in_shape,
+                out_index=in_idx,
+            )
+            out_pos = index_to_position(index=out_idx, strides=out_strides)
+            in_pos = index_to_position(index=in_idx, strides=in_strides)
+            out[out_pos] = fn(in_storage[in_pos])
     return _map
 
 
@@ -329,35 +320,26 @@ def tensor_zip(
         b_strides: Strides,
     ) -> None:
         # TODO: Implement for Task 2.3.
-        a_idx = np.zeros_like(a_shape)
-        b_idx = np.zeros_like(b_shape)
-        
-        def _helper(out_idx, dim):
-            if dim == len(out_shape):
-                broadcast_index(
-                    big_index=out_idx,
-                    big_shape=out_shape,
-                    shape=a_shape,
-                    out_index=a_idx,
-                )
-                broadcast_index(
-                    big_index=out_idx,
-                    big_shape=out_shape,
-                    shape=b_shape,
-                    out_index=b_idx,
-                )
-                out_pos = index_to_position(index=out_idx, strides=out_strides)
-                a_pos = index_to_position(index=a_idx, strides=a_strides)
-                b_pos = index_to_position(index=b_idx, strides=b_strides)
-                out[out_pos] = fn(a_storage[a_pos], b_storage[b_pos])
-                return
-            out_idx.append(None)
-            for i in range(out_shape[dim]):
-                out_idx[-1] = i
-                _helper(out_idx, dim + 1)
-            out_idx.pop()
-        
-        _helper([], 0)
+        for o in np.ndindex(tuple(out_shape)):
+            out_idx = np.array(o)
+            a_idx = np.zeros_like(a_shape)
+            b_idx = np.zeros_like(b_shape)
+            broadcast_index(
+                big_index=out_idx,
+                big_shape=out_shape,
+                shape=a_shape,
+                out_index=a_idx,
+            )
+            broadcast_index(
+                big_index=out_idx,
+                big_shape=out_shape,
+                shape=b_shape,
+                out_index=b_idx,
+            )
+            out_pos = index_to_position(index=out_idx, strides=out_strides)
+            a_pos = index_to_position(index=a_idx, strides=a_strides)
+            b_pos = index_to_position(index=b_idx, strides=b_strides)
+            out[out_pos] = fn(a_storage[a_pos], b_storage[b_pos])
     return _zip
 
 
@@ -387,30 +369,18 @@ def tensor_reduce(
         reduce_dim: int,
     ) -> None:
         # TODO: Implement for Task 2.3.
-        out_idx = np.zeros_like(out_shape)
-        
-        def _helper(a_idx, dim):
-            if dim == len(a_shape):
-                broadcast_index(
-                    big_index=a_idx,
-                    big_shape=a_shape,
-                    shape=out_shape,
-                    out_index=out_idx,
-                )
-                a_pos = index_to_position(index=a_idx, strides=a_strides)
-                out_pos = index_to_position(index=out_idx, strides=out_strides)
-                out[out_pos] = fn(out[out_pos], a_storage[a_pos])
-                return
-            a_idx.append(None)
-            for i in range(a_shape[dim]):
-                a_idx[-1] = i
-                _helper(
-                    a_idx,
-                    dim + 1
-                )
-            a_idx.pop()
-        
-        _helper([], 0)
+        for a in np.ndindex(tuple(a_shape)):
+            a_idx = np.array(a)
+            out_idx = np.zeros_like(out_shape)
+            broadcast_index(
+                big_index=a_idx,
+                big_shape=a_shape,
+                shape=out_shape,
+                out_index=out_idx,
+            )
+            a_pos = index_to_position(index=a_idx, strides=a_strides)
+            out_pos = index_to_position(index=out_idx, strides=out_strides)
+            out[out_pos] = fn(out[out_pos], a_storage[a_pos])
     return _reduce
 
 
