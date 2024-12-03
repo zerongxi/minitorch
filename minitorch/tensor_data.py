@@ -44,13 +44,10 @@ def index_to_position(index: Index, strides: Strides) -> int:
     """
 
     # TODO: Implement for Task 2.1.
-    pos = 0
-    for i, s in zip(index, strides):
-        pos += i * s
-    return pos
+    return sum([i * s for i, s in zip(index, strides)])
 
 
-def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
+def to_index(ordinal: int, shape: Shape, out_index: OutIndex, strides: Optional[Strides] = None) -> None:
     """
     Convert an `ordinal` to an index in the `shape`.
     Should ensure that enumerating position 0 ... size of a
@@ -92,7 +89,7 @@ def broadcast_index(
         None
     """
     # TODO: Implement for Task 2.2.
-    shift = big_shape.shape[0] - shape.shape[0]
+    shift = len(big_shape) - len(shape)
     for i, s in enumerate(shape):
         out_index[i] = 0 if s == 1 else big_index[i + shift]
 

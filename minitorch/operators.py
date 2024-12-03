@@ -43,7 +43,7 @@ def lt(x: float, y: float) -> float:
 def eq(x: float, y: float) -> float:
     "$f(x) =$ 1.0 if x is equal to y else 0.0"
     # TODO: Implement for Task 0.1.
-    return 1.0 if is_close(x, y) else 0.0
+    return 1.0 if abs(x - y) < EPS else 0.0
 
 
 def max(x: float, y: float) -> float:
@@ -71,7 +71,7 @@ def sigmoid(x: float) -> float:
     for stability.
     """
     # TODO: Implement for Task 0.1.
-    return 1.0 / (1.0 + exp(-x))
+    return 1.0 / (1.0 + math.exp(-x))
 
 
 def relu(x: float) -> float:
@@ -106,6 +106,10 @@ def log_back(x: float, d: float) -> float:
 def inv(x: float) -> float:
     "$f(x) = 1/x$"
     # TODO: Implement for Task 0.1.
+    if 0.0 <= x < EPS:
+        x = EPS
+    elif -EPS < x < 0.0:
+        x = -EPS
     return 1.0 / x
 
 

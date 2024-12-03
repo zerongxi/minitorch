@@ -23,13 +23,11 @@ def central_difference(f: Any, *vals: Any, arg: int = 0, epsilon: float = 1e-6) 
         An approximation of $f'_i(x_0, \ldots, x_{n-1})$
     """
     # TODO: Implement for Task 1.1.
-    v = list(vals)
-    v[arg] += epsilon
-    fwd = f(*v)
-    v = list(vals)
-    v[arg] -= epsilon
-    bwd = f(*v)
-    deriv = (fwd - bwd) / (epsilon + epsilon)
+    vals1 = list(vals)
+    vals2 = vals1.copy()
+    vals1[arg] += epsilon
+    vals2[arg] -= epsilon
+    deriv = (f(*vals1) - f(*vals2)) / (epsilon + epsilon)
     return deriv
 
 

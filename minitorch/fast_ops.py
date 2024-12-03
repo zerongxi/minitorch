@@ -41,7 +41,8 @@ class FastOps(TensorOps):
         def ret(a: Tensor, out: Optional[Tensor] = None) -> Tensor:
             if out is None:
                 out = a.zeros(a.shape)
-            f(*out.tuple(), *a.tuple())
+            out_storage, out_shape, out_strides = out.tuple()
+            f(out_storage, tuple(out_shape), out_strides, *a.tuple())
             return out
 
         return ret
@@ -55,7 +56,8 @@ class FastOps(TensorOps):
         def ret(a: Tensor, b: Tensor) -> Tensor:
             c_shape = shape_broadcast(a.shape, b.shape)
             out = a.zeros(c_shape)
-            f(*out.tuple(), *a.tuple(), *b.tuple())
+            out_storage, out_shape, out_strides = out.tuple()
+            f(out_storage, tuple(out_shape), out_strides, *a.tuple(), *b.tuple())
             return out
 
         return ret
@@ -75,7 +77,8 @@ class FastOps(TensorOps):
             out = a.zeros(tuple(out_shape))
             out._tensor._storage[:] = start
 
-            f(*out.tuple(), *a.tuple(), dim)
+            out_storage, out_shape, out_strides = out.tuple()
+            f(out_storage, tuple(out_shape), out_strides, *a.tuple(), dim)
             return out
 
         return ret
@@ -121,7 +124,9 @@ class FastOps(TensorOps):
         assert a.shape[-1] == b.shape[-2]
         out = a.zeros(tuple(ls))
 
-        tensor_matrix_multiply(*out.tuple(), *a.tuple(), *b.tuple())
+        out_storage, out_shape, out_strides = out.tuple()
+        tensor_matrix_multiply(
+            out_storage, tuple(out_shape), out_strides, *a.tuple(), *b.tuple())
 
         # Undo 3d if we added it.
         if both_2d:
@@ -160,7 +165,17 @@ def tensor_map(
         in_strides: Strides,
     ) -> None:
         # TODO: Implement for Task 3.1.
-        raise NotImplementedError('Need to implement for Task 3.1')
+        for out_idx in np.ndindex(out_shape):
+            in_idx = [0 for _, _ in enumerate(in_shape)]
+            broadcast_index(
+                big_index=out_idx,
+                big_shape=out_shape,
+                shape=in_shape,
+                out_index=in_idx,
+            )
+            out_pos = index_to_position(index=out_idx, strides=out_strides)
+            in_pos = index_to_position(index=in_idx, strides=in_strides)
+            out[out_pos] = fn(in_storage[in_pos])
 
     return njit(parallel=True)(_map)  # type: ignore
 
@@ -199,7 +214,25 @@ def tensor_zip(
         b_strides: Strides,
     ) -> None:
         # TODO: Implement for Task 3.1.
-        raise NotImplementedError('Need to implement for Task 3.1')
+        for out_idx in np.ndindex(out_shape):
+            a_idx = [0 for _, _ in enumerate(a_shape)]
+            b_idx = [0 for _, _ in enumerate(b_shape)]
+            broadcast_index(
+                big_index=out_idx,
+                big_shape=out_shape,
+                shape=a_shape,
+                out_index=a_idx,
+            )
+            broadcast_index(
+                big_index=out_idx,
+                big_shape=out_shape,
+                shape=b_shape,
+                out_index=b_idx,
+            )
+            out_pos = index_to_position(index=out_idx, strides=out_strides)
+            a_pos = index_to_position(index=a_idx, strides=a_strides)
+            b_pos = index_to_position(index=b_idx, strides=b_strides)
+            out[out_pos] = fn(a_storage[a_pos], b_storage[b_pos])
 
     return njit(parallel=True)(_zip)  # type: ignore
 
@@ -233,7 +266,15 @@ def tensor_reduce(
         reduce_dim: int,
     ) -> None:
         # TODO: Implement for Task 3.1.
-        raise NotImplementedError('Need to implement for Task 3.1')
+        for out_idx in np.ndindex(out_shape):
+            out_pos = index_to_position(index=out_idx, strides=out_strides)
+            a_idx = list(out_idx)
+            cache = out[out_pos]
+            for i in range(a_shape[reduce_dim]):
+                a_idx[reduce_dim] = i
+                a_pos = index_to_position(index=a_idx, strides=a_strides)
+                cache = fn(cache, a_storage[a_pos])
+            out[out_pos] = cache
 
     return njit(parallel=True)(_reduce)  # type: ignore
 
@@ -279,11 +320,38 @@ def _tensor_matrix_multiply(
     Returns:
         None : Fills in `out`
     """
-    a_batch_stride = a_strides[0] if a_shape[0] > 1 else 0
-    b_batch_stride = b_strides[0] if b_shape[0] > 1 else 0
 
     # TODO: Implement for Task 3.2.
-    raise NotImplementedError('Need to implement for Task 3.2')
-
+    hidden = a_shape[-1]
+    out_shape_prefix = out_shape[:-2]
+    a_shape_prefix = a_shape[:-2]
+    b_shape_prefix = b_shape[:-2]
+    for o in np.ndindex(out_shape):
+        out_idx = list(o)
+        a_idx = [0 for _ in range(len(a_shape) - 2)]
+        b_idx = [0 for _ in range(len(b_shape) - 2)]
+        broadcast_index(
+            big_index=out_idx[:-2],
+            big_shape=out_shape_prefix,
+            shape=a_shape_prefix,
+            out_index=a_idx,
+        )
+        broadcast_index(
+            big_index=out_idx[:-2],
+            big_shape=out_shape_prefix,
+            shape=b_shape_prefix,
+            out_index=b_idx,
+        )
+        a_idx += [out_idx[-2], -1]
+        b_idx += [-1, out_idx[-1]]
+        s = 0.0
+        for h in range(hidden):
+            a_idx[-1] = h
+            b_idx[-2] = h
+            a_pos = index_to_position(index=a_idx, strides=a_strides)
+            b_pos = index_to_position(index=b_idx, strides=b_strides)
+            s += a_storage[a_pos] * b_storage[b_pos]
+        out_pos = index_to_position(index=out_idx, strides=out_strides)
+        out[out_pos] = s
 
 tensor_matrix_multiply = njit(parallel=True, fastmath=True)(_tensor_matrix_multiply)
